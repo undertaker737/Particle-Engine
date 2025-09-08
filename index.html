@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div id="controlPanel">
+    <div class="panel-header">
+      <span class="panel-title">Particle System</span>
+      <div class="panel-header-buttons">
+  <button id="startTutorialBtn" title="Start Tutorial">?</button>
+        <button id="togglePanel" title="Collapse">−</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="section" data-section="Physics">
+        <div class="control-row">
+          <label for="presetSelect" class="control-label">Preset</label>
+          <select id="presetSelect" class="pill-select">
+            <option value="custom" selected>Custom</option>
+            <option value="lightSpray">Light Spray</option>
+            <option value="denseFluid">Dense Fluid</option>
+            <option value="gasCloud">Gas Cloud</option>
+            <option value="heavyRain">Heavy Rain</option>
+            <option value="lavaPool">Lava Pool</option>
+            <option value="explosion">Explosion Demo</option>
+          </select>
+        </div>
+        <div class="control-row">
+          <label for="gravityRange" class="control-label">Gravity <span id="gravityValue" class="value-badge"></span></label>
+          <input id="gravityRange" type="range" min="0" max="2000" step="10">
+        </div>
+        <div class="inline-flags">
+          <label class="flag"><input id="collisionToggle" type="checkbox" checked> Collisions</label>
+          <label class="flag"><input id="overlayToggle" type="checkbox" checked> Overlay</label>
+        </div>
+      </div>
+      <div class="section" data-section="Particles">
+        <div class="control-row">
+          <label for="countRange" class="control-label">Count <span id="countValue" class="value-badge"></span></label>
+          <input id="countRange" type="range" min="100" max="30000" step="100">
+        </div>
+        <div class="control-row">
+          <label for="sizeRange" class="control-label">Size <span id="sizeValue" class="value-badge"></span></label>
+          <input id="sizeRange" type="range" min="2" max="25" step="1">
+        </div>
+        <div class="control-row color-row">
+          <label for="colorInput" class="control-label">Color</label>
+          <input id="colorInput" type="color" value="#ff0000">
+        </div>
+      </div>
+      <div class="section" data-section="Force">
+        <div class="control-row">
+          <label for="forceRange" class="control-label">Force Strength <span id="forceValue" class="value-badge"></span></label>
+          <input id="forceRange" type="range" min="0" max="50000" step="1" value="9001">
+        </div>
+        <div class="control-row">
+          <label for="radiusRange" class="control-label">Force Radius <span id="radiusValue" class="value-badge"></span></label>
+          <input id="radiusRange" type="range" min="50" max="2000" step="10" value="500">
+        </div>
+      </div>
+      <div class="section" data-section="Actions">
+        <div class="buttons">
+          <button id="resetBtn">Reset</button>
+          <button id="randomizeBtn">Shuffle Velocity</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="capacityBtn" title="Estimate maximum stable particle count at 60 FPS">Auto Capacity</button>
+        </div>
+      </div>
+      <div class="section collapsible collapsed" data-section="Advanced" id="advancedSection">
+        <button class="collapse-toggle" id="advToggle" title="Expand Advanced">Advanced ▶</button>
+        <div class="section-body">
+          <div class="control-row">
+            <label class="control-label">Grid Visualizer</label>
+            <button id="gridToggleBtn" type="button">Grid Off</button>
+          </div>
+          <div class="control-row">
+            <label for="timeScaleRange" class="control-label">Time Scale <span id="timeScaleValue" class="value-badge"></span></label>
+            <input id="timeScaleRange" type="range" min="0.1" max="3" step="0.1" value="1">
+          </div>
+          <div class="control-row">
+            <label for="qualitySelect" class="control-label">Collision Quality <span id="qualityValue" class="value-badge"></span></label>
+            <select id="qualitySelect">
+              <option value="1">Low (1)</option>
+              <option value="2">Med (2)</option>
+              <option value="3" selected>High (3)</option>
+              <option value="5">Very High (5)</option>
+              <option value="10">Ultra (10)</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label for="gridModeSelect" class="control-label">Grid Size Mode <span id="gridModeValue" class="value-badge"></span></label>
+            <select id="gridModeSelect" class="pill-select">
+              <option value="auto" selected>Auto</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+          <div class="control-row" id="manualGridSizeRow" style="display:none;">
+            <label for="gridSizeInput" class="control-label">Cell Size (px)</label>
+            <input id="gridSizeInput" type="number" min="8" max="512" step="1" value="32" style="width:100%;background:#000;color:#fff;border:1px solid #333;border-radius:8px;padding:6px;font-size:12px;" />
+          </div>
+            <div class="control-row" id="gridFactorRow">
+            <label for="gridFactorSelect" class="control-label">Auto Scale Factor</label>
+            <select id="gridFactorSelect" class="pill-select">
+              <option value="1">1× (Tight)</option>
+              <option value="1.1" selected>1.1×</option>
+              <option value="1.2">1.2×</option>
+              <option value="1.35">1.35×</option>
+              <option value="1.5">1.5× (Loose)</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label for="blobDensitySelect" class="control-label">Blob Density</label>
+            <select id="blobDensitySelect" class="pill-select">
+              <option value="0">Off</option>
+              <option value="1" selected>On</option>
+            </select>
+          </div>
+          <div class="control-row" id="blobThresholdRow">
+            <label for="blobThresholdRange" class="control-label">Blob Min Count <span id="blobThresholdValue" class="value-badge"></span></label>
+            <input id="blobThresholdRange" type="range" min="2" max="180" step="1" value="8">
+          </div>
+          <div class="control-row">
+            <label for="blobRadiusExtraRange" class="control-label">Blob Extra Radius <span id="blobRadiusExtraValue" class="value-badge"></span></label>
+            <input id="blobRadiusExtraRange" type="range" min="0" max="100" step="5" value="0">
+          </div>
+          <div class="control-row">
+            <label for="elasticRange" class="control-label">Elasticity <span id="elasticValue" class="value-badge"></span></label>
+            <input id="elasticRange" type="range" min="0" max="1" step="0.05">
+          </div>
+          <div class="control-row">
+            <label class="control-label">Velocity Coloring</label>
+            <label class="flag" style="margin-top:0;"><input id="velocityColorToggle" type="checkbox"> Enable</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="zoomPanel">
+    <div class="panel-header">
+      <span class="panel-title">Zoom / Stats</span>
+      <div class="panel-header-buttons">
+        <button id="toggleZoomPanel" title="Collapse">−</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="section" data-section="Zoom">
+        <div class="control-row inline-flags" style="flex-direction:row;gap:12px;">
+          <label class="flag"><input id="zoomEnableToggle" type="checkbox"> Enable</label>
+          <label class="flag"><input id="zoomFollowToggle" type="checkbox" checked> Follow Mouse</label>
+        </div>
+        <div class="control-row">
+          <label for="zoomSizeRange" class="control-label">Region Size <span id="zoomSizeValue" class="value-badge"></span></label>
+          <input id="zoomSizeRange" type="range" min="50" max="400" step="10" value="150">
+        </div>
+        <div class="control-row">
+          <label for="zoomScaleRange" class="control-label">Zoom Factor <span id="zoomScaleValue" class="value-badge"></span></label>
+          <input id="zoomScaleRange" type="range" min="1" max="8" step="0.5" value="2">
+        </div>
+        <div class="control-row">
+          <canvas id="zoomCanvas" width="220" height="220" style="width:100%;height:auto;border:1px solid #222;border-radius:8px;background:#000;"></canvas>
+        </div>
+      </div>
+      <div class="section" data-section="Stats">
+        <div class="control-row" style="gap:4px;">
+          <div class="stat-line" id="statCount">Particles: 0</div>
+          <div class="stat-line" id="statDensity">Density: 0</div>
+          <div class="stat-line" id="statAvgSpeed">Avg Speed: 0</div>
+          <div class="stat-line" id="statAvgColor">Avg Color: <span id="zoomAvgColorSwatch" style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid #444;vertical-align:middle;margin-left:6px;background:#000;"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="selectionPanel">
+    <div class="panel-header">
+      <span class="panel-title">Types / Selection</span>
+      <div class="panel-header-buttons">
+        <button id="toggleSelectionPanel" title="Collapse">−</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="section" data-section="Types">
+        <div class="control-row" style="max-height:140px;overflow-y:auto;" id="typeList"></div>
+        <div class="control-row" style="flex-direction:row;gap:8px;">
+          <button id="newTypeFromSelectionBtn" style="flex:1;">New From Sel</button>
+          <button id="assignSelectionBtn" style="flex:1;">Assign Sel</button>
+        </div>
+        <div class="control-row" style="flex-direction:row;gap:8px;">
+          <button id="renameTypeBtn" style="flex:1;">Rename</button>
+          <button id="deleteTypeBtn" style="flex:1;">Delete</button>
+        </div>
+        <div class="control-row" style="margin-top:4px;padding:6px 8px;border:1px solid #222;border-radius:12px;background:#111;">
+          <div style="font-size:11px;color:#888;margin-bottom:6px;">Active Type Properties</div>
+          <div class="control-row" style="margin-top:0;">
+            <label class="control-label" for="typeNameInput">Name</label>
+            <input id="typeNameInput" type="text" style="background:#000;color:#fff;border:1px solid #333;border-radius:8px;padding:6px;font-size:12px;" />
+          </div>
+          <div class="control-row">
+            <label class="control-label" for="typeColorInput">Color</label>
+            <input id="typeColorInput" type="color" value="#ff0000">
+          </div>
+          <div class="control-row">
+            <label for="typeElasticRange" class="control-label">Elasticity <span id="typeElasticValue" class="value-badge"></span></label>
+            <input id="typeElasticRange" type="range" min="0" max="1" step="0.05" value="0.9">
+          </div>
+          <div class="control-row">
+            <label for="typeGravityRange" class="control-label">Gravity Scale <span id="typeGravityValue" class="value-badge"></span></label>
+            <input id="typeGravityRange" type="range" min="0" max="3" step="0.05" value="1">
+          </div>
+          <div class="control-row inline-flags" style="flex-direction:row;gap:10px;">
+            <label class="flag"><input id="typeBlobEligibleToggle" type="checkbox" checked> Blob Eligible</label>
+          </div>
+          <div class="control-row" style="flex-direction:row;gap:8px;">
+            <button id="applyTypeChangesBtn" style="flex:1;">Apply</button>
+            <button id="revertTypeChangesBtn" style="flex:1;">Revert</button>
+          </div>
+        </div>
+      </div>
+      <div class="section" data-section="Selection">
+        <div class="control-row inline-flags" style="flex-direction:row;gap:12px;align-items:center;">
+          <label class="flag" id="enableSelectionLabel"><input id="enableSelectionToggle" type="checkbox"> Enable Lasso</label>
+        </div>
+        <div class="control-row">
+          <label for="selectionColorInput" class="control-label">Selection Color</label>
+          <input id="selectionColorInput" type="color" value="#00ffff">
+        </div>
+        <div class="control-row" style="flex-direction:row;gap:8px;">
+          <button id="clearSelectionBtn" style="flex:1;">Clear</button>
+          <button id="applySelectionBtn" style="flex:1;">Create Type</button>
+        </div>
+        <div class="control-row" id="selectedCountLabel" style="font-size:12px;color:#ccc;">Selected: 0</div>
+        <div class="control-row" style="font-size:11px;line-height:1.4;color:#888;">
+          Drag to draw lasso. Double‑click to finalize & recolor using current Selection Color. Or use Apply.
+        </div>
+      </div>
+    </div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <script src="src/main.js"></script>
+  <script src="src/selection.js"></script>
+  <script src="src/types.js"></script>
+  <script src="src/tutorial.js"></script>
+  <div id="customBehaviorPanel" style="position:fixed;bottom:16px;right:16px;width:360px;max-height:480px;display:flex;flex-direction:column;background:#111;border:1px solid #222;border-radius:14px;font-family:Inter,system-ui,sans-serif;font-size:12px;color:#eee;z-index:50;box-shadow:0 4px 18px -4px #000a,0 0 0 1px #000;">
+    <div class="panel-header" style="cursor:move;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e1e1e;">
+      <span class="panel-title" style="font-weight:600;font-size:13px;letter-spacing:.5px;">Custom Behavior</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="customTargetSelect" style="background:#000;border:1px solid #333;color:#fff;border-radius:8px;padding:4px 6px;font-size:11px;"></select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input id="customEnableToggle" type="checkbox" checked style="accent-color:#09f;"> On</label>
+        <button id="customMaxBtn" style="background:#181818;border:1px solid #333;color:#bbb;border-radius:6px;padding:2px 6px;font-size:11px;cursor:pointer;line-height:1;" title="Maximize / Restore">⤢</button>
+        <button id="toggleCustomPanel" style="background:#181818;border:1px solid #333;color:#bbb;border-radius:6px;padding:2px 6px;font-size:11px;cursor:pointer;line-height:1;">−</button>
+      </div>
+    </div>
+    <div class="panel-body" id="customPanelBody" style="padding:8px 10px;display:flex;flex-direction:column;gap:8px;overflow:hidden;">
+      <div class="custom-editor-wrap" style="display:flex;flex-direction:column;gap:4px;flex:1 1 auto;min-height:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:#888;">Script</span>
+          <button id="customRunOnceBtn" title="Execute once now" style="margin-left:auto;background:#222;border:1px solid #333;color:#ccc;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;">Run Once</button>
+          <button id="customClearBtn" title="Clear code" style="background:#222;border:1px solid #333;color:#ccc;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;">Clear</button>
+        </div>
+        <textarea id="customCodeArea" spellcheck="false" style="display:none;">
+/*
+Each frame your code runs with an api object (post-physics by default).
+Functions you can create:
+  // Called before physics (optional)
+  api.hooks.before = (api) => { // pre-step logic };
+  // Called after physics (default user main) still executed (your main body below)
+  // Called for each targeted particle after your main code
+  api.hooks.perParticle = (p, api) => { // per particle adjustments };
+
+Examples:
+api.each(p => { p.vx *= 0.99; });
+api.filter(p=>p.y > api.global.height*0.8).forEach(p=> p.vy -= 400*api.dt);
+if(api.count) api.random().color = '#'+(Math.random()*0xffffff|0).toString(16).padStart(6,'0');
+
+// Override Particle.update (advanced – careful!)
+// const origUpdate = Particle.prototype.update;
+// Particle.prototype.update = function(dt){ origUpdate.call(this, dt); this.vx += Math.sin(performance.now()/400)*0.4; };
+
+api.log('particles this frame', api.count);
+*/
+api.log('Custom behavior active, particles:', api.count);
+        </textarea>
+      </div>
+      <div id="customStatus" style="font-size:11px;color:#6fa2ff;min-height:16px;white-space:pre-line;">Ready.</div>
+      <div style="display:flex;gap:8px;">
+        <button id="customApplyBtn" style="flex:1;background:#0b4b8a;border:1px solid #0d5aa3;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Apply</button>
+        <button id="customMinifyBtn" style="background:#222;border:1px solid #333;color:#bbb;padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer;">Minify</button>
+      </div>
+    </div>
+  </div>
+  <style>
+    #customBehaviorPanel.maximized {left:20px!important; top:20px!important; right:20px!important; bottom:20px!important; width:auto!important; height:auto!important; max-height:none!important;}
+    #customBehaviorPanel.maximized .panel-body {flex:1 1 auto; display:flex; flex-direction:column; min-height:0;}
+    #customBehaviorPanel.maximized .custom-editor-wrap {flex:1 1 auto; min-height:0;}
+    #customBehaviorPanel.maximized .custom-editor-wrap .CodeMirror {height:100%!important;}
+    .custom-editor-wrap {min-height:0;}
+    .custom-editor-wrap .CodeMirror {flex:1 1 auto;}
+    /* Base editor style */
+    .CodeMirror { background:#000; color:#e9e9e9; border:1px solid #292929; border-radius:10px; font-size:12px; height:100%; }
+    /* Constrain height only when not maximized */
+    #customBehaviorPanel:not(.maximized) .CodeMirror { height:240px; }
+    .CodeMirror-fullscreen { position:fixed!important; top:0; left:0; right:0; bottom:0; height:auto!important; z-index:9999; }
+    .CodeMirror-hints { background:#0d0d0d; border:1px solid #333; font-size:12px; }
+    .CodeMirror-hint { color:#ddd; }
+    .CodeMirror-hint-active { background:#1e3a5a; color:#fff; }
+  </style>
+  <!-- CodeMirror (lightweight JS mode) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+  <script src="src/customBehavior.js"></script>
+  <script>
+  (function(){
+    const panel = document.getElementById('customBehaviorPanel');
+    if(!panel) return;
+    const header = panel.querySelector('.panel-header');
+    let drag=false,sx=0,sy=0,startL=0,startT=0;
+    header.addEventListener('mousedown',e=>{ if(e.target.id==='toggleCustomPanel') return; drag=true;sx=e.clientX;sy=e.clientY; const r=panel.getBoundingClientRect(); startL=r.left; startT=r.top; document.body.style.userSelect='none'; });
+    window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-sx, dy=e.clientY-sy; panel.style.left=(startL+dx)+'px'; panel.style.top=(startT+dy)+'px'; panel.style.right='auto'; panel.style.bottom='auto'; });
+    window.addEventListener('mouseup',()=>{ drag=false; document.body.style.userSelect=''; });
+    const codeArea = document.getElementById('customCodeArea');
+    const applyBtn = document.getElementById('customApplyBtn');
+    const statusEl = document.getElementById('customStatus');
+    const enableToggle = document.getElementById('customEnableToggle');
+    const targetSelect = document.getElementById('customTargetSelect');
+    const runOnceBtn = document.getElementById('customRunOnceBtn');
+    const clearBtn = document.getElementById('customClearBtn');
+    const toggleBtn = document.getElementById('toggleCustomPanel');
+    const body = document.getElementById('customPanelBody');
+    const minifyBtn = document.getElementById('customMinifyBtn');
+    const maxBtn = document.getElementById('customMaxBtn');
+    let editor = null;
+    function initEditor(){
+      if(typeof CodeMirror==='undefined' || editor) return;
+      editor = CodeMirror.fromTextArea(codeArea, {
+        lineNumbers:true,
+        mode:'javascript',
+        indentUnit:2,
+        tabSize:2,
+        lineWrapping:true,
+        autofocus:false,
+        extraKeys:{
+          'Ctrl-Space': cm => cm.showHint({hint: CodeMirror.hint.customJS, completeSingle:false}),
+          'Tab': function(cm){ if(cm.somethingSelected()){ cm.indentSelection('add'); return; } cm.replaceSelection('  ','end'); },
+          'Esc': cm => { const box=document.querySelector('.CodeMirror-hints'); if(box) { box.remove(); return; } cm.getInputField().blur(); }
+        }
+      });
+      window._customBehaviorEditor = editor;
+      if(CodeMirror.registerHelper){
+        CodeMirror.registerHelper('hint','customJS', function(cm){
+          const cur = cm.getCursor();
+          const line = cm.getLine(cur.line);
+          // Capture previous identifier chain (letters, digits, underscore, dot)
+          const match = line.slice(0, cur.ch).match(/([A-Za-z0-9_\.]+)$/);
+          let full = match ? match[1] : '';
+          // If ends with a dot show properties
+          const endsWithDot = /\.$/.test(full);
+          if(endsWithDot) full = full.slice(0,-1);
+          const segments = full.split('.').filter(Boolean);
+          const prefix = segments.pop() || '';
+          const baseChain = segments.join('.');
+          const builtins = [
+            'api','api.each','api.filter','api.random','api.hooks','api.hooks.before','api.hooks.perParticle','api.global','api.global.width','api.global.height','api.global.gravity','api.types','api.byType','api.log','particles','gravity','paused','performance','requestAnimationFrame','Math','Date'
+          ];
+          let candidates = builtins;
+          if(baseChain){ // Filter to entries that start with baseChain
+            candidates = candidates.filter(w=> w.startsWith(baseChain+'.'));
+          }
+            if(!endsWithDot && prefix){
+              candidates = candidates.filter(w=> w.toLowerCase().includes(prefix.toLowerCase()));
+            }
+          // De-duplicate last segment suggestions (show shortest unique forms first)
+          const seen = new Set();
+          const list = candidates.map(w=>{
+            if(baseChain){ return w; }
+            return w; // keep full path for clarity
+          }).filter(w=>{ if(seen.has(w)) return false; seen.add(w); return true; });
+          const startCh = match ? cur.ch - (match[1].length) : cur.ch;
+          return { list, from: CodeMirror.Pos(cur.line, startCh), to: CodeMirror.Pos(cur.line, cur.ch) };
+        });
+      }
+      editor.on('inputRead', function(cm, change){
+        if(change.text && change.text[0] && /[\.\w]/.test(change.text[0])){
+          cm.showHint({hint: CodeMirror.hint.customJS, completeSingle:false});
+        }
+      });
+      setTimeout(()=>editor.refresh(),150);
+    }
+    initEditor();
+    function getCode(){ return editor? editor.getValue() : codeArea.value; }
+    function setCode(v){ if(editor){ editor.setValue(v); } else { codeArea.value = v; } }
+    function refreshTargets(){
+      if(!window.customBehavior) return; const opts = window.customBehavior.listTargets();
+      targetSelect.innerHTML = ''; opts.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.value; opt.textContent=o.label; targetSelect.appendChild(opt); });
+      targetSelect.value = window.customBehavior.getTarget();
+    }
+    function apply(){
+      if(!window.customBehavior) return; window.customBehavior.setCode(getCode()); window.customBehavior.setEnabled(enableToggle.checked); if(targetSelect.value.startsWith('type:')){ window.customBehavior.setTargetType(targetSelect.value.split(':')[1]); } else { window.customBehavior.setTargetAll(); }
+      // Extend: detect and register hooks if user defined api.hooks usage pattern
+      const err = window.customBehavior.getLastError();
+      statusEl.style.color = err? '#ff5d5d' : '#6fa2ff';
+      statusEl.textContent = err? ('Error: '+err) : 'Applied.';
+    }
+    applyBtn.addEventListener('click', apply);
+    enableToggle.addEventListener('change', ()=>{ if(window.customBehavior) window.customBehavior.setEnabled(enableToggle.checked); });
+    targetSelect.addEventListener('change', ()=>{ apply(); });
+    runOnceBtn.addEventListener('click', ()=>{
+      if(!window.customBehavior) return; const code = getCode(); try { new Function('api', code)( { dt:0, particles: window.particles||[], each:(cb)=> (window.particles||[]).forEach(cb), filter:(fn)=> (window.particles||[]).filter(fn), count:(window.particles||[]).length, random: ()=> (window.particles||[])[Math.floor(Math.random()*(window.particles||[]).length)], global:{ width: innerWidth, height: innerHeight, gravity: (typeof gravity!=='undefined'? gravity:0) }, log: (...a)=> console.log('[Custom:RunOnce]',...a), hooks:{} } ); statusEl.style.color='#6fa2ff'; statusEl.textContent='Executed once.'; }
+      catch(e){ statusEl.style.color='#ff5d5d'; statusEl.textContent='RunOnce Error: '+e.message; }
+    });
+    clearBtn.addEventListener('click', ()=>{ setCode(''); apply(); });
+    toggleBtn.addEventListener('click', ()=>{ const hidden = body.style.display==='none'; body.style.display = hidden? 'flex':'none'; toggleBtn.textContent = hidden? '−':'+'; });
+    minifyBtn.addEventListener('click', ()=>{ const txt=getCode(); if(!txt.trim()) return; try { setCode(txt.replace(/\/\/.*$/mg,'').replace(/\s+/g,' ').trim()); apply(); } catch(_){ /* ignore */ } });
+    maxBtn.addEventListener('click', ()=>{ 
+      const maximized = panel.classList.toggle('maximized'); 
+      maxBtn.textContent = maximized? '🗗':'⤢'; 
+      if(editor){
+        if(maximized){
+          // Let flex drive size; clear manual sizing
+          editor.setSize('100%','100%');
+        } else {
+          editor.setSize(null, '240px');
+        }
+        // Defer refresh to allow layout to settle
+        setTimeout(()=>{ editor.refresh(); }, 40);
+      }
+    });
+    window.addEventListener('resize', ()=>{ if(editor){ editor.refresh(); } });
+    // Initial
+    setTimeout(()=>{ refreshTargets(); apply(); if(editor) editor.refresh(); }, 150);
+    // Refresh when types possibly change
+    setInterval(()=>{ refreshTargets(); }, 1500);
+  })();
+  </script>
+</body>
+</html>

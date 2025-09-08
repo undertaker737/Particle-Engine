@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Particle System – Scripting Documentation</title>
+<link href="style.css" rel="stylesheet" />
+<style>
+  html,body{height:100%;}
+  body{font-family:Inter,system-ui,sans-serif;background:#0b0b0b;color:#e3e3e3;margin:0;padding:0;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-y:scroll;scrollbar-gutter:stable;}
+  /* Custom scrollbar (WebKit/Blink) */
+  body::-webkit-scrollbar{width:12px;background:#0b0b0b;}
+  body::-webkit-scrollbar-track{background:#0b0f12;border-left:1px solid #121d25;}
+  body::-webkit-scrollbar-thumb{background:linear-gradient(#1d2a36,#223544);border:2px solid #0b0b0b;border-radius:20px;}
+  body::-webkit-scrollbar-thumb:hover{background:linear-gradient(#274152,#2e5263);} 
+  /* Firefox */
+  body{scrollbar-width:thin;scrollbar-color:#2a4253 #0b0f12;}
+  header{padding:28px 40px 12px;}
+  h1{margin:0 0 4px;font-size:30px;letter-spacing:.5px;font-weight:600;background:linear-gradient(90deg,#53a6ff,#9bc9ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  h2{margin:42px 0 12px;font-size:20px;font-weight:600;letter-spacing:.5px;color:#6fa2ff;}
+  h3{margin:28px 0 10px;font-size:16px;font-weight:600;color:#8dbdff;}
+  p{margin:0 0 14px;max-width:880px;}
+  code,pre{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#12181f;color:#d0e5ff;border:1px solid #1e2933;border-radius:6px;}
+  code{padding:2px 5px;}
+  pre{padding:16px 18px;overflow:auto;margin:0 0 20px;}
+  a{color:#6fa2ff;text-decoration:none;}a:hover{text-decoration:underline;}
+  .container{max-width:1100px;margin:0 auto;padding:0 40px 80px;}
+  .badge{display:inline-block;padding:3px 8px;font-size:11px;font-weight:600;border-radius:14px;background:#1d2a36;color:#7fb6ff;margin-left:8px;vertical-align:middle;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin:24px 0 8px;}
+  .card{background:#111a21;border:1px solid #1f2d36;border-radius:14px;padding:16px 16px 14px;box-shadow:0 4px 18px -6px #0009,0 0 0 1px #000;}
+  .card h3{margin-top:0;font-size:14px;letter-spacing:.5px;color:#7fb6ff;}
+  table{border-collapse:collapse;margin:10px 0 28px;min-width:420px;}
+  th,td{border:1px solid #1e2a33;padding:6px 10px;font-size:12px;text-align:left;vertical-align:top;}
+  th{background:#16212a;font-weight:600;color:#7fb6ff;}
+  tr:nth-child(even) td{background:#10181f;}
+  .small{font-size:11px;color:#9ab3c6;}
+  .callout{padding:14px 18px;border:1px solid #2a3a46;background:#14202a;border-radius:12px;margin:22px 0;font-size:13px;}
+  .warn{border-color:#4d2f20;background:#2a1710;color:#ffb899;}
+  .ok{border-color:#1e3d25;background:#102115;color:#9fd7a9;}
+  .sticky-nav{position:sticky;top:0;background:#0b0b0bcc;backdrop-filter:blur(6px);padding:10px 40px 12px;border-bottom:1px solid #111c23;z-index:20;}
+  .toc a{display:block;padding:4px 0;font-size:13px;color:#b9d8ff;}
+  .toc a:hover{color:#fff;}
+  ol{margin:0 0 18px;padding-left:22px;}
+  li{margin:4px 0 4px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Scripting Guide <span class="badge">Custom Behavior</span></h1>
+  <p>This document explains how to inject custom logic into the particle simulation using the in‑app <strong>Custom Behavior</strong> panel. You can iterate live: edit code, apply, and instantly see the effect without reloading the page.</p>
+</header>
+<div class="sticky-nav">
+  <div class="toc" style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:20px;">
+    <div style="min-width:180px;">
+      <strong style="font-size:12px;letter-spacing:.5px;color:#6fa2ff;">Overview</strong>
+      <a href="#quick-start">Quick Start</a>
+      <a href="#lifecycle">Execution Lifecycle</a>
+      <a href="#directives">Directives</a>
+      <a href="#api-surface">API Surface</a>
+      <a href="#hooks">Hooks</a>
+    </div>
+    <div style="min-width:180px;">
+      <strong style="font-size:12px;letter-spacing:.5px;color:#6fa2ff;">Advanced</strong>
+      <a href="#targeting">Targeting Particles</a>
+      <a href="#performance">Performance</a>
+      <a href="#patterns">Patterns</a>
+      <a href="#unsafe-mode">Unsafe Mode</a>
+      <a href="#examples">Examples</a>
+    </div>
+    <div style="min-width:180px;">
+      <strong style="font-size:12px;letter-spacing:.5px;color:#6fa2ff;">Reference</strong>
+      <a href="#api-reference">Reference</a>
+      <a href="#error-handling">Errors</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <h2 id="quick-start">Quick Start</h2>
+  <ol>
+    <li>Open the <strong>Custom Behavior</strong> panel (bottom-right).</li>
+    <li>Write or paste JavaScript into the editor.</li>
+    <li>Click <em>Apply</em> to compile and activate continuous execution.</li>
+    <li>Toggle <em>On</em>/<em>Off</em> with the checkbox for quick A/B comparison.</li>
+    <li>Use <strong>Run Once</strong> for one‑shot scripts (e.g., seeding positions).</li>
+  </ol>
+  <pre><code>// Gentle upward drift
+a pi.each(p => { p.vy -= 10 * api.dt; });
+// Random sparkle
+if(api.count) api.random().color = '#'+(Math.random()*0xffffff|0).toString(16).padStart(6,'0');</code></pre>
+  <div class="callout ok">Tip: The API object you receive is lightweight and rebuilt each frame. Cache nothing from it between frames unless you understand lifetime constraints.</div>
+
+  <h2 id="lifecycle">Execution Lifecycle</h2>
+  <p>The simulation calls an internal <code>physicsStep(dt)</code> each frame. Your custom code can run in one of four phases, determined by a directive:</p>
+  <table>
+    <tr><th>Phase</th><th>When</th><th>Description</th></tr>
+    <tr><td><code>before</code></td><td>Pre physics</td><td>Mutate particle state before collisions/integration.</td></tr>
+    <tr><td><code>after</code></td><td>Post physics (default)</td><td>Adjust final velocities/positions, recolor, analytics.</td></tr>
+    <tr><td><code>both</code></td><td>Pre + Post</td><td>Two executions per frame (once before, once after).</td></tr>
+    <tr><td><code>replace</code></td><td>Instead of physics</td><td>You fully control simulation. Call <code>origPhysics(dt)</code> manually if desired.</td></tr>
+  </table>
+
+  <h2 id="directives">Directives</h2>
+  <p>Place directives inside leading comment lines (first ~12). They are scanned once per compile.</p>
+  <table>
+    <tr><th>Directive</th><th>Form</th><th>Effect</th></tr>
+    <tr><td>Phase</td><td><code>// @phase before|after|both|replace</code></td><td>Select execution phase.</td></tr>
+    <tr><td>Unsafe</td><td><code>// @unsafe</code></td><td>Enables unrestricted function allowing global mutation & prototype changes.</td></tr>
+  </table>
+
+  <h2 id="api-surface">API Surface</h2>
+  <p>Each frame we build a fresh <code>api</code> object passed to your function:</p>
+  <table>
+    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>dt</code></td><td>Number</td><td>Delta time (seconds-ish). Use for time-based motion.</td></tr>
+    <tr><td><code>particles</code></td><td>Array&lt;Particle&gt;</td><td>Targeted particle subset.</td></tr>
+    <tr><td><code>count</code></td><td>Number</td><td>particles.length convenience.</td></tr>
+    <tr><td><code>each(cb)</code></td><td>Function</td><td>Iterate all targeted particles.</td></tr>
+    <tr><td><code>filter(pred)</code></td><td>Function</td><td>Return array of particles passing predicate.</td></tr>
+    <tr><td><code>random()</code></td><td>Function</td><td>Random particle from target set.</td></tr>
+    <tr><td><code>global</code></td><td>Object</td><td>{ width, height, gravity }</td></tr>
+    <tr><td><code>byType(id)</code></td><td>Function</td><td>All particles of given type id.</td></tr>
+    <tr><td><code>types()</code></td><td>Function</td><td>Array of type metadata.</td></tr>
+    <tr><td><code>log(...)</code></td><td>Function</td><td>Console logging prefixing with <code>[Custom]</code>.</td></tr>
+    <tr><td><code>hooks</code></td><td>Object</td><td>Assign optional <code>before(api)</code> and <code>perParticle(p,api)</code>.</td></tr>
+  </table>
+
+  <h2 id="hooks">Hooks</h2>
+  <p>Instead of manually looping multiple times you can register hooks:</p>
+  <pre><code>// @phase both
+api.hooks.before = (api) => {
+  // Pre-physics energy injection
+  api.each(p => { p.vx *= 1.02; });
+};
+api.hooks.perParticle = (p, api) => {
+  // Post-physics drag
+  p.vx *= 0.985; p.vy *= 0.985;
+};</code></pre>
+
+  <h2 id="targeting">Targeting Particles</h2>
+  <p>Use the dropdown to restrict execution to a specific type. Internally we store a target key of form <code>type:&lt;id&gt;</code>. Utility helpers:</p>
+  <ul>
+    <li><code>api.particles</code> – current target subset.</li>
+    <li><code>api.byType(id)</code> – fetch arbitrary type particles even if not active target.</li>
+    <li><code>api.types()</code> – enumerate available type metadata.</li>
+  </ul>
+
+  <h2 id="performance">Performance</h2>
+  <div class="callout">
+    1. Keep loops O(n). Avoid nested loops over all particles unless absolutely needed.<br>
+    2. Use <code>api.dt</code> to scale forces—makes behavior resolution independent.<br>
+    3. Prefer mutating velocity (<code>vx/vy</code>) over position directly for physically plausible motion.<br>
+    4. Assign <code>api.hooks.perParticle</code> for uniform adjustments; do not rebuild heavy objects inside it.<br>
+    5. Batch expensive randomness: precompute values then reuse during the frame.
+  </div>
+
+  <h2 id="patterns">Common Patterns</h2>
+  <div class="grid">
+    <div class="card"><h3>Pulsing Field</h3><pre><code>// Sinusoidal vertical force
+const amp = 400;
+const t = performance.now()/1000;
+api.each(p=>{ p.vy += Math.sin(t + p.x*0.01)*amp*api.dt; });</code></pre></div>
+    <div class="card"><h3>Viscous Drag</h3><pre><code>// Slow everything smoothly
+api.each(p=>{ p.vx *= 0.98; p.vy *= 0.98; });</code></pre></div>
+    <div class="card"><h3>Random Sparkles</h3><pre><code>if(api.count){
+  api.random().color = '#'+(Math.random()*0xffffff|0)
+    .toString(16).padStart(6,'0');
+}</code></pre></div>
+    <div class="card"><h3>Gravity Flip</h3><pre><code>// @phase before
+if(Math.random()<0.002){
+  api.global.gravity *= -1; // tiny chaos
+}</code></pre></div>
+    <div class="card"><h3>Edge Bounce Tint</h3><pre><code>api.each(p=>{
+  if(p.x<4||p.x>api.global.width-4||p.y<4||p.y>api.global.height-4){
+    p.color='#ffcc00';
+  }
+});</code></pre></div>
+    <div class="card"><h3>Selective Cooling</h3><pre><code>api.filter(p=>p.vy>600).forEach(p=>{
+  p.vy *= 0.6;
+});</code></pre></div>
+  </div>
+
+  <h2 id="unsafe-mode">Unsafe Mode</h2>
+  <div class="callout warn"><strong>Warning:</strong> <code>// @unsafe</code> lets your code access <code>window</code>, patch prototypes, and call internal constructors. This can crash the sim or leak memory. Use only for deep experimentation.</div>
+  <p>In unsafe mode the function receives extra parameters: <code>(api, window, Particle, particles, origPhysics)</code>. You can call <code>origPhysics(dt)</code> manually when using <code>@phase replace</code> to run built-in physics afterwards.</p>
+  <pre><code>// @phase replace
+// @unsafe
+// Custom integrator example
+let t=0; t+=api.dt;
+api.each(p=>{
+  p.vx += Math.sin(t + p.y*0.01)*20*api.dt;
+  p.x += p.vx*api.dt; p.y += p.vy*api.dt;
+});
+// Optionally run stock physics
+origPhysics(api.dt);</code></pre>
+
+  <h2 id="examples">Extended Examples</h2>
+  <h3>Per-Particle Hook Pipeline</h3>
+  <pre><code>// @phase both
+let energy = 0;
+api.hooks.before = (api)=>{ energy = 0; };
+api.hooks.perParticle = (p, api)=>{
+  energy += (p.vx*p.vx + p.vy*p.vy);
+  p.vx *= 0.99; p.vy *= 0.99;
+};
+if(api.count) api.log('Avg Energy', (energy/api.count).toFixed(2));</code></pre>
+
+  <h3>Type-Specific Interaction</h3>
+  <pre><code>// Assume types(): first is baseline, others get mild attraction
+const ts = api.types();
+if(ts.length>1){
+  const base = api.byType(ts[0].id);
+  api.each(p=>{
+    for(const b of base){
+      const dx=b.x-p.x, dy=b.y-p.y; const d=Math.hypot(dx,dy)||1;
+      const f=40/d; p.vx += dx/d*f*api.dt; p.vy += dy/d*f*api.dt;
+    }
+  });
+}</code></pre>
+
+  <h3>Adaptive Threshold Force</h3>
+  <pre><code>// Slow heavy vertical clusters
+const slowBand = api.filter(p=> p.vy>800 && p.y>api.global.height*0.6);
+slowBand.forEach(p=>{ p.vy *= 0.7; });</code></pre>
+
+  <h2 id="api-reference">API Reference</h2>
+  <p>Summary table (duplicates earlier details for quick lookup).</p>
+  <table>
+    <tr><th>Name</th><th>Kind</th><th>Details</th><th>Notes</th></tr>
+    <tr><td><code>dt</code></td><td>number</td><td>Frame delta</td><td>Use for time scaling</td></tr>
+    <tr><td><code>particles</code></td><td>Particle[]</td><td>Target subset</td><td>Directly mutable</td></tr>
+    <tr><td><code>count</code></td><td>number</td><td>Subset length</td><td></td></tr>
+    <tr><td><code>each(fn)</code></td><td>function</td><td>Iterate particles</td><td>Faster than forEach</td></tr>
+    <tr><td><code>filter(pred)</code></td><td>function</td><td>Filter subset</td><td>Allocates new array</td></tr>
+    <tr><td><code>random()</code></td><td>function</td><td>Random particle</td><td>Returns undefined if count=0</td></tr>
+    <tr><td><code>global</code></td><td>object</td><td>{width,height,gravity}</td><td>Read-only snapshot</td></tr>
+    <tr><td><code>byType(id)</code></td><td>function</td><td>Particles of id</td><td>Searches global array</td></tr>
+    <tr><td><code>types()</code></td><td>function</td><td>Type metadata</td><td>May be empty</td></tr>
+    <tr><td><code>log()</code></td><td>function</td><td>Console log</td><td>Prefixed</td></tr>
+    <tr><td><code>hooks.before</code></td><td>function|null</td><td>Called pre-physics</td><td>Only if set</td></tr>
+    <tr><td><code>hooks.perParticle</code></td><td>function|null</td><td>Each particle after physics</td><td>Only if set</td></tr>
+  </table>
+
+  <h2 id="error-handling">Error Handling</h2>
+  <p>Compilation and runtime errors are captured and surfaced in the panel status line. During runtime we stop only the failing invocation; subsequent frames keep trying so transient issues don’t permanently disable your script.</p>
+  <p>Common pitfalls:</p>
+  <ul>
+    <li>Referencing <code>api.xxx</code> properties not listed (undefined errors).</li>
+    <li>Assuming a non-empty particle subset when <code>count</code> could be zero.</li>
+    <li>Infinite loops (will freeze the frame; reload required).</li>
+  </ul>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Does unsafe mode run faster?</h3>
+  <p>No. It simply grants more power. Performance is dominated by your loop complexity.</p>
+  <h3>Can I store state between frames?</h3>
+  <p>Yes—use module-level variables declared outside your function (e.g., <code>let t=0;</code>) so they persist.</p>
+  <h3>Can I add libraries?</h3>
+  <p>You can paste small utility code. External network imports aren’t supported from inside the sandbox.</p>
+  <h3>How do I disable the script temporarily?</h3>
+  <p>Toggle the <em>On</em> checkbox or clear the code and click Apply.</p>
+  <h3>How do I reset?</h3>
+  <p>Reload the page or click Reset in the main control panel to reconstruct particles.</p>
+
+  <footer style="margin-top:60px;font-size:11px;color:#566472;">Generated Scripting Docs • Customize as needed.</footer>
+</div>
+</body>
+</html>
