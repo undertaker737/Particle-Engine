@@ -40,6 +40,11 @@
       this._ensureUI();
   this._installGlobalNav();
   this._attachGlobalListeners();
+      // Ensure lasso is disabled by default during tutorials
+      try {
+        const toggle = document.querySelector('#enableSelectionToggle');
+        if(toggle && toggle.checked){ toggle.checked = false; toggle.dispatchEvent(new Event('change')); }
+      } catch(_){}
       this._showStep();
     }
     next(){ if(this.current < this.steps.length-1){ this.current++; this._showStep(); } else { this.finish(); } }
@@ -54,6 +59,7 @@
   if(this._highlightInterval){ clearInterval(this._highlightInterval); this._highlightInterval=null; }
   this._currentHighlightTargets=[];
   this._detachGlobalListeners();
+  if(this._dock){ try{ this._dock.remove(); }catch(_){ } this._dock=null; }
       if(this.currentTrack && !skipped){
         try{ localStorage.setItem('tutorial_completed_'+this.currentTrack, '1'); }catch(_){ }
       }
@@ -202,11 +208,7 @@
           // Reposition after smooth scroll likely completes
           setTimeout(()=>{ if(this.active && this.steps[this.current]===step){ this._position(el, step); this._positionFocus(els.length>1? els : el, step.focusPadding||8); } }, 260);
         }
-        // Auto-enable lasso if this is the lasso step and checkbox exists but not checked
-        if(step.title && /lasso/i.test(step.title)){
-          const toggle = document.querySelector('#enableSelectionToggle');
-          if(toggle && !toggle.checked){ toggle.click(); }
-        }
+  // Do not auto-enable lasso; user should toggle it explicitly per tutorial instructions
         if(step.advanceOnClick){
           const adv = ()=>{ el.removeEventListener('click', adv); this.next(); };
           setTimeout(()=> el.addEventListener('click', adv, { once:true }), 20);
@@ -350,8 +352,17 @@
         '<div style="font-size:19px;font-weight:600;letter-spacing:.5px;flex:1;">Welcome</div>'+ 
         '<button id="startupCloseBtn" style="background:#222;border:1px solid #333;color:#bbb;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">×</button>'+
         '</div>'+
-        '<div style="font-size:12px;color:#aaa;margin-top:-4px;">Select a tutorial to begin, or close this window. Tracks can be re-opened later with the ? button.</div>'+
+        '<div style="font-size:12px;color:#aaa;margin-top:-4px;">Select a tutorial to begin, or close this window. Tracks can be re-opened later with the ? button. Panels are movable (drag their headers) and collapsible (− buttons).</div>'+
         '<div class="track-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>'+
+        '<div class="layouts" style="margin-top:6px;">'+
+          '<div style="font-size:12px;color:#9ab; margin:10px 0 6px; font-weight:600;">Layouts</div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;">'+
+            '<button class="layout-btn" data-layout="default" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Default</button>'+
+            '<button class="layout-btn" data-layout="studio" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Studio</button>'+
+            '<button class="layout-btn" data-layout="analysis" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Analysis</button>'+
+            '<button class="layout-btn" data-layout="present" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Present</button>'+
+          '</div>'+
+        '</div>'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;">'+
           '<input type="checkbox" id="dontShowTutorialStartup" style="accent-color:#0b62d6;"> Don\'t show this again'+
         '</label>'+
@@ -379,11 +390,48 @@
         const dont = box.querySelector('#dontShowTutorialStartup').checked;
         if(dont && !force){ try{ localStorage.setItem('tutorial_startup_dismissed','1'); }catch(_){ } }
         wrap.remove(); this._startupModal=null;
+        if(this._dock){ try{ this._dock.remove(); }catch(_){ } this._dock=null; }
       };
       box.querySelector('#startupDismissBtn').addEventListener('click', finalize);
       box.querySelector('#startupCloseBtn').addEventListener('click', finalize);
   box.querySelector('#startBasicTrack').addEventListener('click', ()=>{ finalize(); this.startTrack('basic'); });
+      // Layout handlers
+      box.querySelectorAll('.layout-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const mode = btn.getAttribute('data-layout');
+          try{ localStorage.setItem('ui_layout_mode', mode); }catch(_){ }
+          this.applyLayout(mode);
+        });
+      });
       this._startupModal = wrap;
+    }
+    applyLayout(mode){
+      const ctl = document.getElementById('controlPanel');
+      const zoom = document.getElementById('zoomPanel');
+      const sel = document.getElementById('selectionPanel');
+      if(!ctl || !zoom || !sel) return;
+      const reset = (el)=>{ if(!el) return; el.style.top=''; el.style.left=''; el.style.right=''; el.style.bottom=''; el.style.width=''; el.style.maxHeight=''; el.style.transform=''; };
+      const place = (el, pos)=>{ if(!el) return; reset(el); Object.assign(el.style, pos); };
+      switch(mode){
+        case 'studio':
+          place(ctl, { top:'16px', left:'16px', width:'300px', maxHeight:'calc(100% - 32px)' });
+          place(zoom, { top:'16px', right:'16px', width:'300px', maxHeight:'calc(100% - 32px)' });
+          place(sel, { bottom:'16px', right:'16px', width:'320px', transform:'' });
+          break;
+        case 'analysis':
+          place(ctl, { top:'16px', left:'16px', width:'300px' });
+          place(zoom, { top:'340px', left:'16px', width:'300px', right:'' });
+          place(sel, { bottom:'16px', left:'16px', width:'320px', transform:'' });
+          break;
+        case 'present':
+          place(ctl, { top:'16px', left:'16px', width:'260px' });
+          place(zoom, { top:'16px', right:'16px', width:'260px' });
+          place(sel, { bottom:'16px', left:'50%', transform:'translateX(-50%)', width:'300px' });
+          break;
+        default:
+          reset(ctl); reset(zoom); reset(sel);
+          break;
+      }
     }
     showLauncher(anchorBtn){
       if(this._launcher){ this._launcher.remove(); this._launcher=null; }
@@ -533,6 +581,6 @@
       tutorial.showLauncher(startBtn);
     });
   }
-  // Initial (respect dismissal)
-  window.addEventListener('load', ()=> setTimeout(()=> tutorial.showStartupDialog(false), 120));
+  // Initial (respect dismissal) and apply saved layout
+  window.addEventListener('load', ()=> setTimeout(()=> { try{ const m=localStorage.getItem('ui_layout_mode'); if(m) tutorial.applyLayout(m); }catch(_){}; tutorial.showStartupDialog(false); }, 120));
 })();

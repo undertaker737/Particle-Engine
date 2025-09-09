@@ -10,6 +10,9 @@
   const selectedCountLabel = document.getElementById('selectedCountLabel');
   if(!panel) return;
 
+  // Ensure lasso is disabled by default on load
+  if (enableToggle) enableToggle.checked = false;
+
   // Draggable behavior
   (function enableDrag(){
     const header = panel.querySelector('.panel-header');
