@@ -17,37 +17,48 @@
   (function enableDrag(){
     const header = panel.querySelector('.panel-header');
     if(!header) return;
-    let drag=false,sx=0,sy=0,startLeft=0,startTop=0;
-    const originalMaxHeight = panel.style.maxHeight || '340px';
-    let lockedWidth = null; let lockedHeight = null;
+    let drag=false, offsetX=0, offsetY=0;
+  const originalMaxHeight = panel.style.maxHeight || '340px';
+  let lockedWidth = null; let lockedHeight = null;
     header.addEventListener('mousedown',e=>{
       if(e.target===toggleBtn) return;
-      drag=true; sx=e.clientX; sy=e.clientY;
+      drag=true;
       const r=panel.getBoundingClientRect();
-      startLeft=r.left; startTop=r.top;
+      // Mouse offset inside the panel to keep cursor anchored
+      offsetX = e.clientX - r.left; offsetY = e.clientY - r.top;
       document.body.style.userSelect='none';
-      // Lock current size so flex/auto layout doesn't expand while dragging
-      lockedWidth = r.width; lockedHeight = r.height;
-      panel.style.width = lockedWidth + 'px';
-      panel.style.maxHeight = lockedHeight + 'px';
+      // Neutralize centering and conflicting anchors; set explicit position
+      panel.style.position = 'fixed';
+      panel.style.left = r.left + 'px';
+      panel.style.top = r.top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.transform = '';
+  // Do not hard lock width/height (fit-content). Keep height to prevent reflow if needed.
+  lockedWidth = null; lockedHeight = r.height;
+  panel.style.height = Math.round(lockedHeight) + 'px';
     });
     window.addEventListener('mousemove',e=>{
       if(!drag) return;
-      const dx=e.clientX-sx, dy=e.clientY-sy;
-      panel.style.left=(startLeft+dx)+'px';
-      panel.style.top=(startTop+dy)+'px';
-      panel.style.transform=''; // cancel center translate
+      // Desired top-left so cursor stays at same spot over the panel
+      let nx = e.clientX - (offsetX||0); let ny = e.clientY - (offsetY||0);
+      // Clamp within viewport bounds
+      const W = window.innerWidth, H = window.innerHeight;
+  const w = panel.offsetWidth; const h = panel.offsetHeight;
+      nx = Math.max(6, Math.min(nx, W - w - 6));
+      ny = Math.max(6, Math.min(ny, H - h - 6));
+      panel.style.transform=''; // ensure no residual centering is applied
+  panel.style.left= Math.round(nx) + 'px';
+  panel.style.top= Math.round(ny) + 'px';
     });
     window.addEventListener('mouseup',()=>{
       if(!drag && lockedWidth===null) return; // nothing to do
       drag=false; document.body.style.userSelect='';
       // Restore sizing constraints
-      if(lockedWidth!==null){
-        panel.style.maxHeight = originalMaxHeight;
-        panel.style.width = Math.min(lockedWidth, 420) + 'px';
-        panel.style.height = '';
-      }
-      lockedWidth = lockedHeight = null;
+  // Restore sizing constraints
+  panel.style.maxHeight = originalMaxHeight;
+  panel.style.height = '';
+  lockedWidth = lockedHeight = null;
     });
   })();
 

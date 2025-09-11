@@ -348,19 +348,19 @@
       wrap.style.cssText='position:fixed;inset:0;z-index:2050;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);';
       const box = document.createElement('div');
       box.style.cssText='width:400px;max-width:90%;background:#111;border:1px solid #2a2a2a;border-radius:20px;padding:22px 24px;font:500 13px/1.5 Inter,system-ui,sans-serif;color:#ddd;box-shadow:0 10px 40px -8px #000,0 0 0 1px #000;display:flex;flex-direction:column;gap:16px;';
-      box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;">'+
-        '<div style="font-size:19px;font-weight:600;letter-spacing:.5px;flex:1;">Welcome</div>'+ 
-        '<button id="startupCloseBtn" style="background:#222;border:1px solid #333;color:#bbb;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">×</button>'+
+      box.innerHTML = 
+        '<div style="display:flex;align-items:center;gap:10px;">'+
+          '<div style="font-size:19px;font-weight:600;letter-spacing:.5px;flex:1;">Welcome</div>'+ 
+          '<button id="startupCloseBtn" style="background:#222;border:1px solid #333;color:#bbb;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">×</button>'+
         '</div>'+
         '<div style="font-size:12px;color:#aaa;margin-top:-4px;">Select a tutorial to begin, or close this window. Tracks can be re-opened later with the ? button. Panels are movable (drag their headers) and collapsible (− buttons).</div>'+
         '<div class="track-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>'+
         '<div class="layouts" style="margin-top:6px;">'+
           '<div style="font-size:12px;color:#9ab; margin:10px 0 6px; font-weight:600;">Layouts</div>'+
           '<div style="display:flex;flex-wrap:wrap;gap:8px;">'+
-            '<button class="layout-btn" data-layout="default" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Default</button>'+
-            '<button class="layout-btn" data-layout="studio" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Studio</button>'+
-            '<button class="layout-btn" data-layout="analysis" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Analysis</button>'+
-            '<button class="layout-btn" data-layout="present" style="background:#222;border:1px solid #333;color:#ddd;border-radius:10px;padding:6px 10px;font-size:12px;">Present</button>'+
+            '<button class="layout-btn" data-layout="play" style="background:#222;border:1px solid #333;color:#7fe37f;border-radius:10px;padding:6px 10px;font-size:12px;">Play Mode</button>'+ 
+            '<button class="layout-btn" data-layout="layoutx" style="background:#222;border:1px solid #333;color:#f36;border-radius:10px;padding:6px 10px;font-size:12px;">Layout X</button>'+ 
+            '<button id="exportLayoutBtn" style="background:#222;border:1px solid #333;color:#6fa2ff;border-radius:10px;padding:6px 10px;font-size:12px;">Export Layout</button>'+ 
           '</div>'+
         '</div>'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;">'+
@@ -403,34 +403,119 @@
           this.applyLayout(mode);
         });
       });
+      // Export Layout button -> open the Layout Editor
+      const exportBtn = box.querySelector('#exportLayoutBtn');
+      if(exportBtn){
+        exportBtn.addEventListener('click', ()=>{
+          // Close startup and open editor UI if present
+          try{ wrap.remove(); this._startupModal=null; }catch(_){ }
+          if(window.LayoutEditor && typeof window.LayoutEditor.openDialog==='function'){
+            window.LayoutEditor.openDialog();
+          } else {
+            alert('Layout Editor not loaded.');
+          }
+        });
+      }
       this._startupModal = wrap;
     }
     applyLayout(mode){
       const ctl = document.getElementById('controlPanel');
       const zoom = document.getElementById('zoomPanel');
       const sel = document.getElementById('selectionPanel');
+      const custom = document.getElementById('customBehaviorPanel');
       if(!ctl || !zoom || !sel) return;
-      const reset = (el)=>{ if(!el) return; el.style.top=''; el.style.left=''; el.style.right=''; el.style.bottom=''; el.style.width=''; el.style.maxHeight=''; el.style.transform=''; };
-      const place = (el, pos)=>{ if(!el) return; reset(el); Object.assign(el.style, pos); };
+      // Helper to collapse/expand a panel
+    function setCollapsed(panel, collapsed) {
+        if (!panel) return;
+        if (collapsed) {
+          panel.classList.add('collapsed');
+          // Find and update toggle button if present
+          const btn = panel.querySelector('.panel-header-buttons button[title="Collapse"], .panel-header-buttons button[title="Expand"], #toggleCustomPanel');
+          if(btn) btn.textContent = '+';
+      // Let CSS control collapsed width: clear inline width
+      panel.style.width = '';
+        } else {
+          panel.classList.remove('collapsed');
+          const btn = panel.querySelector('.panel-header-buttons button[title="Collapse"], .panel-header-buttons button[title="Expand"], #toggleCustomPanel');
+          if(btn) btn.textContent = '−';
+        }
+        // Custom panel body visibility
+        if(panel && panel.id === 'customBehaviorPanel'){
+          const body = panel.querySelector('#customPanelBody');
+          if(body) body.style.display = collapsed ? 'none' : 'flex';
+        }
+      }
+      // Fully clear all relevant inline styles
+      const reset = (el)=>{
+        if(!el) return;
+        el.style.top=''; el.style.left=''; el.style.right=''; el.style.bottom='';
+        el.style.width=''; el.style.maxWidth=''; el.style.minWidth='';
+        el.style.height=''; el.style.maxHeight='';
+        el.style.transform='';
+        el.style.position='';
+        // Clear any stale inline display on body from older handlers
+        const body = el.querySelector('.panel-body');
+        if(body) body.style.display='';
+      };
+      // Always reset before applying a new layout
+  reset(ctl); reset(zoom); reset(sel); if(custom) reset(custom);
+      // Default: all expanded if mode missing
+      if(!mode) {
+        setCollapsed(ctl, false);
+        setCollapsed(zoom, false);
+        setCollapsed(sel, false);
+        return;
+      }
+      const place = (el, pos)=>{
+        if(!el) return;
+        el.style.position = 'fixed';
+        Object.assign(el.style, pos);
+      };
       switch(mode){
-        case 'studio':
-          place(ctl, { top:'16px', left:'16px', width:'300px', maxHeight:'calc(100% - 32px)' });
-          place(zoom, { top:'16px', right:'16px', width:'300px', maxHeight:'calc(100% - 32px)' });
-          place(sel, { bottom:'16px', right:'16px', width:'320px', transform:'' });
+        case 'play': {
+          // Play Mode (exact positions provided by user)
+          // Control
+          setCollapsed(ctl, false);
+          place(ctl, {
+            top:'66px', left:'6px', right:'auto', bottom:'auto',
+            width:'280px', maxHeight:'calc(100% - 32px)', transform:'none'
+          });
+          // Zoom
+          setCollapsed(zoom, true);
+          place(zoom, {
+            top:'59px', left:'1054px', right:'auto', bottom:'822px',
+            width:'220px', maxHeight:'60px', transform:'none'
+          });
+          // Selection
+          setCollapsed(sel, true);
+          place(sel, {
+            top:'6px', left:'253px', right:'auto', bottom:'auto',
+            width:'178.859px', maxHeight:'340px', transform:'matrix(1, 0, 0, 1, -89.4297, 0)'
+          });
+          // Custom Behavior Panel: collapsed at top-right
+          if(custom){
+            setCollapsed(custom, true);
+            place(custom, { top:'16px', right:'16px', left:'auto', bottom:'auto', transform:'none' });
+          }
           break;
-        case 'analysis':
-          place(ctl, { top:'16px', left:'16px', width:'300px' });
-          place(zoom, { top:'340px', left:'16px', width:'300px', right:'' });
-          place(sel, { bottom:'16px', left:'16px', width:'320px', transform:'' });
+        }
+        case 'layoutx': {
+          // Alternate layout preset
+          setCollapsed(ctl, true);
+          setCollapsed(zoom, false);
+          setCollapsed(sel, false);
+          place(ctl, { top:'16px', left:'16px', right:'', bottom:'', width:'300px', transform:'none' });
+          place(zoom, { top:'16px', right:'16px', left:'', bottom:'', width:'300px', transform:'none' });
+          place(sel, { bottom:'16px', left:'16px', right:'', top:'', transform:'none' });
           break;
-        case 'present':
-          place(ctl, { top:'16px', left:'16px', width:'260px' });
-          place(zoom, { top:'16px', right:'16px', width:'260px' });
-          place(sel, { bottom:'16px', left:'50%', transform:'translateX(-50%)', width:'300px' });
+        }
+        default: {
+          // Fallback to all expanded
+          setCollapsed(ctl, false);
+          setCollapsed(zoom, false);
+          setCollapsed(sel, false);
           break;
-        default:
-          reset(ctl); reset(zoom); reset(sel);
-          break;
+        }
       }
     }
     showLauncher(anchorBtn){
@@ -439,22 +524,17 @@
       menu.className='tutorial-track-menu';
       menu.style.cssText='position:fixed;z-index:2100;background:#111;border:1px solid #333;border-radius:12px;padding:10px 10px;display:flex;flex-direction:column;gap:6px;min-width:220px;box-shadow:0 8px 28px -6px #000,0 0 0 1px #000;';
       const close = ()=>{ if(menu){ menu.remove(); this._launcher=null; } };
-      document.addEventListener('click', function onDoc(e){ if(!menu.contains(e.target) && e.target!==anchorBtn){ close(); document.removeEventListener('click', onDoc, true);} }, true);
-      const title = document.createElement('div'); title.textContent='Tutorial Tracks'; title.style.cssText='font-size:13px;font-weight:600;margin-bottom:4px;'; menu.appendChild(title);
-      const tracks = this.listTracks();
-      if(!tracks.length){ const empty=document.createElement('div'); empty.textContent='No tracks registered.'; empty.style.fontSize='12px'; menu.appendChild(empty);} else {
-        tracks.forEach(t=>{
-          const btn=document.createElement('button');
-          const done = localStorage.getItem('tutorial_completed_'+t.name)==='1';
-          btn.textContent = (t.meta.label||t.name)+(done?' ✓':'');
-          btn.style.cssText='all:unset;cursor:pointer;padding:6px 8px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;color:#ddd;';
-          btn.onmouseenter=()=>btn.style.background='#1d1d1d';
-          btn.onmouseleave=()=>btn.style.background='transparent';
-          btn.onclick=()=>{ close(); this.startTrack(t.name); };
-          menu.appendChild(btn);
-          if(t.meta.desc){ const d=document.createElement('div'); d.textContent=t.meta.desc; d.style.cssText='font-size:11px;color:#666;margin:-2px 0 4px 4px;'; menu.appendChild(d); }
-        });
-      }
+      // Build menu from registered tracks
+      this.listTracks().forEach(t=>{
+        const btn = document.createElement('button');
+        btn.textContent = t.meta.label || t.name;
+        btn.style.cssText='all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;color:#ddd;display:block;';
+        btn.onmouseenter=()=>btn.style.background='#1d1d1d';
+        btn.onmouseleave=()=>btn.style.background='transparent';
+        btn.onclick=()=>{ close(); this.startTrack(t.name); };
+        menu.appendChild(btn);
+        if(t.meta.desc){ const d=document.createElement('div'); d.textContent=t.meta.desc; d.style.cssText='font-size:11px;color:#666;margin:-2px 0 6px 4px;'; menu.appendChild(d); }
+      });
       const r = anchorBtn.getBoundingClientRect();
       menu.style.top = (r.bottom + 8)+'px';
       menu.style.left = Math.min(innerWidth - 260, r.left)+'px';
@@ -581,6 +661,18 @@
       tutorial.showLauncher(startBtn);
     });
   }
-  // Initial (respect dismissal) and apply saved layout
-  window.addEventListener('load', ()=> setTimeout(()=> { try{ const m=localStorage.getItem('ui_layout_mode'); if(m) tutorial.applyLayout(m); }catch(_){}; tutorial.showStartupDialog(false); }, 120));
+  // Initial (respect dismissal) and apply saved layout (supports custom layouts via LayoutEditor)
+  window.addEventListener('load', ()=> setTimeout(()=> { 
+    try{ 
+      const m=localStorage.getItem('ui_layout_mode'); 
+      if(m){ 
+        if(/^custom:/.test(m) && window.LayoutEditor && typeof window.LayoutEditor.applySavedLayout==='function'){
+          window.LayoutEditor.applySavedLayout(m.replace(/^custom:/,''));
+        } else {
+          tutorial.applyLayout(m);
+        }
+      }
+    }catch(_){}
+    tutorial.showStartupDialog(false); 
+  }, 120));
 })();

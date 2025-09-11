@@ -1195,9 +1195,10 @@ pauseBtn?.addEventListener('click', () => {
 });
 
 togglePanelBtn?.addEventListener('click', () => {
-    const collapsed = panelBody.style.display === 'none';
-    panelBody.style.display = collapsed ? 'block' : 'none';
-    togglePanelBtn.textContent = collapsed ? '−' : '+';
+    const panel = document.getElementById('controlPanel');
+    if (!panel) return;
+    const collapsed = panel.classList.toggle('collapsed');
+    togglePanelBtn.textContent = collapsed ? '+' : '−';
 });
 
 themeToggleBtn?.addEventListener('click', () => {
@@ -1212,11 +1213,8 @@ advToggle?.addEventListener('click', () => {
 });
 toggleZoomPanel?.addEventListener('click', () => {
     if (!zoomPanel) return;
-    const body = zoomPanel.querySelector('.panel-body');
-    if (!body) return;
-    const hidden = body.style.display === 'none';
-    body.style.display = hidden ? 'block' : 'none';
-    toggleZoomPanel.textContent = hidden ? '−' : '+';
+    const collapsed = zoomPanel.classList.toggle('collapsed');
+    toggleZoomPanel.textContent = collapsed ? '+' : '−';
 });
 
 // Draggable zoom panel
@@ -1225,22 +1223,40 @@ toggleZoomPanel?.addEventListener('click', () => {
     const header = zoomPanel.querySelector('.panel-header');
     if (!header) return;
     let drag=false, sx=0, sy=0, startLeft=0, startTop=0;
+    let lockedWidth=null, lockedHeight=null;
     header.addEventListener('mousedown', (e)=>{
         if (e.target === toggleZoomPanel) return;
         drag = true; sx = e.clientX; sy = e.clientY;
         const rect = zoomPanel.getBoundingClientRect();
         startLeft = rect.left; startTop = rect.top;
+        // Lock size to prevent reflow jitter
+        lockedWidth = rect.width; lockedHeight = rect.height;
+        zoomPanel.style.width = lockedWidth + 'px';
+        zoomPanel.style.height = lockedHeight + 'px';
         document.body.style.userSelect='none';
     });
     window.addEventListener('mousemove', (e)=>{
         if (!drag) return;
         const dx = e.clientX - sx, dy = e.clientY - sy;
-        zoomPanel.style.left = (startLeft + dx) + 'px';
-        zoomPanel.style.top = (startTop + dy) + 'px';
+        // Clamp within viewport
+        const W = window.innerWidth, H = window.innerHeight;
+        const w = lockedWidth || zoomPanel.offsetWidth; const h = lockedHeight || zoomPanel.offsetHeight;
+        let nx = startLeft + dx; let ny = startTop + dy;
+        nx = Math.max(6, Math.min(nx, W - w - 6));
+        ny = Math.max(6, Math.min(ny, H - h - 6));
+    zoomPanel.style.left = Math.round(nx) + 'px';
+    zoomPanel.style.top = Math.round(ny) + 'px';
         // remove right positioning if moving horizontally
         zoomPanel.style.right = 'auto';
     });
-    window.addEventListener('mouseup', ()=>{ drag=false; document.body.style.userSelect=''; });
+    window.addEventListener('mouseup', ()=>{ 
+        if (!drag) return;
+        drag=false; document.body.style.userSelect='';
+        // Restore auto sizing
+        zoomPanel.style.height = '';
+        zoomPanel.style.width = '';
+        lockedWidth = lockedHeight = null;
+    });
 })();
 
 // Modify collision application check
@@ -1270,21 +1286,40 @@ canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); });
     const panel = document.getElementById('controlPanel');
     const header = panel?.querySelector('.panel-header');
     if (!panel || !header) return;
-    let drag = false; let sx=0, sy=0; let startLeft=0, startTop=0;
+    let drag = false; let sx=0, sy=0; let startLeft=0, startTop=0; let lockedWidth=null, lockedHeight=null;
     header.addEventListener('mousedown', (e)=>{
         if (e.target === togglePanelBtn) return; // don't start drag on toggle button
         drag = true; sx = e.clientX; sy = e.clientY;
         const rect = panel.getBoundingClientRect();
         startLeft = rect.left; startTop = rect.top;
+        // Lock current size to avoid layout shifts while dragging
+        lockedWidth = rect.width; lockedHeight = rect.height;
+        panel.style.width = lockedWidth + 'px';
+        panel.style.height = lockedHeight + 'px';
         document.body.style.userSelect = 'none';
     });
     window.addEventListener('mousemove', (e)=>{
         if (!drag) return;
         const dx = e.clientX - sx; const dy = e.clientY - sy;
-        panel.style.left = (startLeft + dx) + 'px';
-        panel.style.top = (startTop + dy) + 'px';
+        const W = window.innerWidth, H = window.innerHeight;
+        const w = lockedWidth || panel.offsetWidth; const h = lockedHeight || panel.offsetHeight;
+        let nx = startLeft + dx; let ny = startTop + dy;
+        nx = Math.max(6, Math.min(nx, W - w - 6));
+        ny = Math.max(6, Math.min(ny, H - h - 6));
+    panel.style.left = Math.round(nx) + 'px';
+    panel.style.top = Math.round(ny) + 'px';
+        // Ensure left/top positioning dominates
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
     });
-    window.addEventListener('mouseup', ()=>{ drag = false; document.body.style.userSelect=''; });
+    window.addEventListener('mouseup', ()=>{ 
+        if (!drag) return;
+        drag = false; document.body.style.userSelect=''; 
+        // Restore natural sizing
+        panel.style.width = '';
+        panel.style.height = '';
+        lockedWidth = lockedHeight = null;
+    });
 })();
 const sliders = document.querySelectorAll('input[type=range]');
 sliders.forEach(slider => {

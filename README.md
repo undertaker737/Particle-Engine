@@ -1,4 +1,4 @@
-# Particle Engine
+# Particle System
 
 High‑performance browser particle simulation with multi-track interactive tutorials, custom scripting, type-based physics, and optional metaball ("blob") rendering.
 
@@ -137,4 +137,3 @@ Specify your preferred license (e.g., MIT) here.
 
 ---
 Enjoy experimenting and extending the particle sandbox!
-

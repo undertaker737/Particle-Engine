@@ -15,7 +15,8 @@
     <div class="panel-header">
       <span class="panel-title">Particle System</span>
       <div class="panel-header-buttons">
-  <button id="startTutorialBtn" title="Start Tutorial">?</button>
+        <button id="startTutorialBtn" title="Start Tutorial">?</button>
+        <button id="layoutEditorBtn" title="Layout Editor" style="margin-left:6px;">⚙</button>
         <button id="togglePanel" title="Collapse">−</button>
       </div>
     </div>
@@ -246,6 +247,7 @@
   <script src="src/main.js"></script>
   <script src="src/selection.js"></script>
   <script src="src/types.js"></script>
+  <script src="src/layoutEditor.js"></script>
   <script src="src/tutorial.js"></script>
   <div id="customBehaviorPanel" style="position:fixed;bottom:16px;right:16px;width:360px;max-height:480px;display:flex;flex-direction:column;background:#111;border:1px solid #222;border-radius:14px;font-family:Inter,system-ui,sans-serif;font-size:12px;color:#eee;z-index:50;box-shadow:0 4px 18px -4px #000a,0 0 0 1px #000;">
     <div class="panel-header" style="cursor:move;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e1e1e;">
@@ -324,10 +326,41 @@ api.log('Custom behavior active, particles:', api.count);
     const panel = document.getElementById('customBehaviorPanel');
     if(!panel) return;
     const header = panel.querySelector('.panel-header');
-    let drag=false,sx=0,sy=0,startL=0,startT=0;
-    header.addEventListener('mousedown',e=>{ if(e.target.id==='toggleCustomPanel') return; drag=true;sx=e.clientX;sy=e.clientY; const r=panel.getBoundingClientRect(); startL=r.left; startT=r.top; document.body.style.userSelect='none'; });
-    window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-sx, dy=e.clientY-sy; panel.style.left=(startL+dx)+'px'; panel.style.top=(startT+dy)+'px'; panel.style.right='auto'; panel.style.bottom='auto'; });
-    window.addEventListener('mouseup',()=>{ drag=false; document.body.style.userSelect=''; });
+    let drag=false,sx=0,sy=0,startL=0,startT=0,lockedW=null,lockedH=null;
+    header.addEventListener('mousedown',e=>{
+      // Only start drag on primary button and not on header controls
+      if(e.button!==0) return;
+      const t = e.target;
+      if (t && (t.id==='toggleCustomPanel' || t.id==='customMaxBtn' || t.tagName==='BUTTON' || t.tagName==='SELECT' || t.tagName==='INPUT')) return;
+      drag=true; sx=e.clientX; sy=e.clientY;
+      const r=panel.getBoundingClientRect();
+      startL=r.left; startT=r.top;
+      // Lock size to prevent layout jitter while dragging
+      lockedW = r.width; lockedH = r.height;
+      panel.style.width = lockedW + 'px';
+      panel.style.height = lockedH + 'px';
+      document.body.style.userSelect='none';
+    });
+    window.addEventListener('mousemove',e=>{
+      if(!drag) return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      const W = window.innerWidth, H = window.innerHeight;
+      const w = lockedW || panel.offsetWidth; const h = lockedH || panel.offsetHeight;
+      let nx = startL + dx; let ny = startT + dy;
+      // Clamp within viewport with small margin
+      nx = Math.max(6, Math.min(nx, W - w - 6));
+      ny = Math.max(6, Math.min(ny, H - h - 6));
+      panel.style.left=Math.round(nx)+'px';
+      panel.style.top=Math.round(ny)+'px';
+      panel.style.right='auto'; panel.style.bottom='auto';
+    });
+    window.addEventListener('mouseup',()=>{
+      if(!drag) return;
+      drag=false; document.body.style.userSelect='';
+      // Restore natural sizing
+      panel.style.width=''; panel.style.height='';
+      lockedW = lockedH = null;
+    });
     const codeArea = document.getElementById('customCodeArea');
     const applyBtn = document.getElementById('customApplyBtn');
     const statusEl = document.getElementById('customStatus');

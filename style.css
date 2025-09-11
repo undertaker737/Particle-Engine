@@ -26,6 +26,7 @@ canvas { display: block; }
   z-index: 10;
   overflow: hidden;
   border: 1px solid #222; /* dark border */
+  box-sizing: border-box;
 }
 #zoomPanel {
   position: fixed;
@@ -41,13 +42,15 @@ canvas { display: block; }
   z-index: 10;
   overflow: hidden;
   border: 1px solid #222;
+  box-sizing: border-box;
 }
 #selectionPanel {
   position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 300px;
+  width: fit-content;
+  max-width: 380px;
   max-height: 340px;
   background: #111;
   border-radius: 16px;
@@ -57,9 +60,15 @@ canvas { display: block; }
   z-index: 11;
   overflow: hidden;
   border: 1px solid #222;
+  box-sizing: border-box;
 }
-#selectionPanel.collapsed { max-height:60px !important; height:auto; overflow:visible; }
+#selectionPanel.collapsed { max-height:60px !important; height:auto; overflow:visible; width:fit-content !important; }
 #selectionPanel.collapsed .panel-body { display:none !important; }
+/* Consistent collapse behavior for all panels */
+#controlPanel.collapsed { max-height:60px !important; height:auto; overflow:visible; width:220px !important; }
+#controlPanel.collapsed .panel-body { display:none !important; }
+#zoomPanel.collapsed { max-height:60px !important; height:auto; overflow:visible; width:220px !important; }
+#zoomPanel.collapsed .panel-body { display:none !important; }
 #typeList .type-item {display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#1a1a1a;border:1px solid #222;border-radius:8px;font-size:12px;margin-top:6px;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
 #typeList .type-item:hover {background:#222;}
 #typeList .type-item.active {background:#2d2d2d;border-color:#444;}
